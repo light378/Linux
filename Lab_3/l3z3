@@ -1,0 +1,23 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+    srand(time(NULL));
+    while (1) {
+        num = rand() % 6 + 1;
+
+        if (fprintf(f, "%d\n", num) < 0) {
+            printf("Досягнуто ліміт розміру файлу!\n");
+            break;
+        }
+    }
+    fclose(f);
+    return 0;
+}
+int main() {
+    FILE *f;
+    int num;
+    f = fopen("dice.txt", "w");
+    if (f == NULL) {
+        printf("Помилка відкриття файлу\n");
+        return 1;
+    }

@@ -1,0 +1,58 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <signal.h>
+
+void handler(int sig) {
+    printf("\nЛіміт часу CPU вичерпано!\n");
+    exit(0);
+}
+
+int exists(int arr[], int size, int num) {
+    for (int i = 0; i < size; i++) {
+        if (arr[i] == num) return 1;
+    }
+    return 0;
+}
+
+int main() {
+    int lotto1[7];
+    int lotto2[6];
+    int num, i;
+
+    signal(SIGXCPU, handler);
+
+    srand(time(NULL));
+
+    while (1) {
+
+        for (i = 0; i < 7; i++) {
+            do {
+                num = rand() % 49 + 1;
+            } while (exists(lotto1, i, num));
+            lotto1[i] = num;
+        }
+
+
+        for (i = 0; i < 6; i++) {
+            do {
+                num = rand() % 36 + 1;
+            } while (exists(lotto2, i, num));
+            lotto2[i] = num;
+        }
+
+        printf("7 з 49: ");
+        for (i = 0; i < 7; i++) {
+            printf("%d ", lotto1[i]);
+        }
+
+        printf("\n6 з 36: ");
+        for (i = 0; i < 6; i++) {
+            printf("%d ", lotto2[i]);
+        }
+
+        printf("\n\n");
+    }
+
+    return 0;
+}

@@ -1,0 +1,45 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+
+void handler(int sig) {
+    printf("File size limit exceeded!\n");
+    exit(1);
+}
+
+int main(int argc, char *argv[]) {
+    FILE *in, *out;
+    int ch;
+
+    signal(SIGXFSZ, handler);
+
+    if (argc != 3) {
+        printf("Program need two arguments\n");
+        return 1;
+    }
+
+    in = fopen(argv[1], "r");
+    if (in == NULL) {
+        printf("Cannot open file %s for reading\n", argv[1]);
+        return 1;
+    }
+
+    out = fopen(argv[2], "w");
+    if (out == NULL) {
+        printf("Cannot open file %s for writing\n", argv[2]);
+        fclose(in);
+        return 1;
+    }
+
+    while ((ch = fgetc(in)) != EOF) {
+        if (fputc(ch, out) == EOF) {
+            printf("Error writing to file\n");
+            break;
+        }
+    }
+
+    fclose(in);
+    fclose(out);
+
+    return 0;
+}

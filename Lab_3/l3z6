@@ -1,0 +1,12 @@
+#include <stdio.h>
+
+void recursive(int n) {
+    int arr[1000];
+    printf("Depth of recursion %d\n", n);
+    recursive(n + 1);
+}
+
+int main() {
+    recursive(1);
+    return 0;
+}
