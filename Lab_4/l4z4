@@ -1,0 +1,46 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void bad_demo(void) {
+    void *ptr = NULL;
+    size_t n = 32;
+
+    for (int i = 0; i < 3; i++) {
+        if (!ptr)
+            ptr = malloc(n);
+
+        if (!ptr) {
+            perror("malloc");
+            return;
+        }
+
+        memset(ptr, 'A', n);
+        free(ptr);
+    }
+}
+
+void good_demo(void) {
+    void *ptr = NULL;
+    size_t n = 32;
+
+    for (int i = 0; i < 3; i++) {
+        if (!ptr)
+            ptr = malloc(n);
+
+        if (!ptr) {
+            perror("malloc");
+            return;
+        }
+
+        memset(ptr, 'A', n);
+        free(ptr);
+        ptr = NULL;
+    }
+}
+
+int main(void) {
+    bad_demo();
+    good_demo();
+    return 0;
+}

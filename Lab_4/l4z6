@@ -1,0 +1,17 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    int *a = realloc(NULL, 5 * sizeof(int));
+    printf("realloc(NULL, 5*sizeof(int)) -> %p\n", (void*)a);
+
+    int *b = malloc(5 * sizeof(int));
+    printf("malloc(...) -> %p\n", (void*)b);
+
+    int *c = realloc(b, 0);
+    printf("realloc(b, 0) -> %p\n", (void*)c);
+
+    free(a);
+    free(c);
+    return 0;
+}

@@ -1,0 +1,63 @@
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+
+/*
+ l4z8.c — Демонстрація guard pages:
+ Виділяє 3 сторінки: [guard][usable][guard].
+ Середню сторінку робить RW, крайні — PROT_NONE.
+ Потім пише всередині буфера (має пройти),
+ а потім пише за кінець buffer (має викликати SIGSEGV).
+*/
+
+int main(void) {
+    long pagesize = sysconf(_SC_PAGESIZE);
+    if (pagesize <= 0) {
+        perror("sysconf(_SC_PAGESIZE)");
+        return 1;
+    }
+
+    size_t n_pages = 3;
+    size_t total = n_pages * (size_t)pagesize;
+
+    void *base = mmap(NULL, total, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (base == MAP_FAILED) {
+        fprintf(stderr, "mmap failed: %s\n", strerror(errno));
+        return 1;
+    }
+
+    void *mid = (char *)base + pagesize;
+    if (mprotect(mid, (size_t)pagesize, PROT_READ | PROT_WRITE) != 0) {
+        fprintf(stderr, "mprotect failed: %s\n", strerror(errno));
+        munmap(base, total);
+        return 1;
+    }
+
+    printf("pagesize = %ld\n", pagesize);
+    printf("mapping base = %p\n", base);
+    printf("left guard page = %p\n", base);
+    printf("usable buffer (mid) = %p\n", mid);
+    printf("right guard page = %p\n", (char *)base + 2*pagesize);
+    fflush(stdout);
+
+    char *buf = (char *)mid;
+    size_t usable = (size_t)pagesize;
+
+    printf("writing inside buffer at offset %zu ...\n", usable - 1);
+    buf[usable - 1] = 'A';
+    printf("ok: wrote inside buffer\n");
+
+    printf("writing just past buffer (this should cause SIGSEGV)...\n");
+    /* Наступний запис має викликати SIGSEGV */
+    buf[usable] = 'B';
+
+    /* Якщо програма дійшла сюди — mprotect не спрацював як очікувалось */
+    printf("unexpected: write past buffer succeeded\n");
+
+    munmap(base, total);
+    return 0;
+}

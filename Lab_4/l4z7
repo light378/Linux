@@ -1,0 +1,35 @@
+#define _DEFAULT_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+
+struct sbar {
+    int a;
+    double b;
+};
+
+int main(void) {
+    struct sbar *ptr, *newptr;
+
+    size_t n1 = 1000;
+    size_t n2 = 500;
+
+    ptr = calloc(n1, sizeof(struct sbar));
+    if (!ptr) {
+        printf("Помилка: calloc не зміг виділити пам'ять\n");
+        return 1;
+    }
+
+    printf("Виділено для %zu елементів: %zu байт\n", n1, n1 * sizeof(struct sbar));
+
+    newptr = reallocarray(ptr, n2, sizeof(struct sbar));
+    if (!newptr) {
+        printf("Помилка: reallocarray не зміг перевиділити пам'ять\n");
+        free(ptr);
+        return 1;
+    }
+
+    printf("Після reallocarray для %zu елементів: %zu байт\n", n2, n2 * sizeof(struct sbar));
+
+    free(newptr);
+    return 0;
+}

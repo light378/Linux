@@ -1,0 +1,29 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <stdint.h>
+
+int main(void) {
+    char *ptr = malloc(16);
+    if (!ptr) return 1;
+
+    strcpy(ptr, "ok");
+    printf("До realloc: ptr=%p, дані=%s\n", (void *)ptr, ptr);
+
+    errno = 0;
+    size_t huge = SIZE_MAX;
+    char *tmp = realloc(ptr, huge);
+
+    if (tmp == NULL) {
+        printf("realloc не зміг виділити пам’ять: tmp=NULL, errno=%d\n", errno);
+        printf("Старий вказівник досі валідний: ptr=%p, дані=%s\n", (void *)ptr, ptr);
+        free(ptr);
+    } else {
+        ptr = tmp;
+        printf("realloc успішний: новий ptr=%p\n", (void *)ptr);
+        free(ptr);
+    }
+
+    return 0;
+}
