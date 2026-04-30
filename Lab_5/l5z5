@@ -1,0 +1,32 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+        return 1;
+    }
+
+    char *buffer = (char*)malloc(1024 * 1024);
+    if (!buffer) {
+        perror("malloc");
+        return 1;
+    }
+
+    int fd = open(argv[1], O_RDONLY);
+    if (fd == -1) {
+        // ПОМИЛКА: вихід без звільнення buffer -> ВИТІК ПАМ’ЯТІ
+        fprintf(stderr, "Error opening file: %s\n", strerror(errno));
+        fprintf(stderr, "Memory leak occurs (1 MB not freed).\n");
+        return 1;
+    }
+
+    free(buffer);
+    close(fd);
+    printf("Success: file opened, memory freed correctly.\n");
+    return 0;
+}
