@@ -1,0 +1,42 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void stack_overflow(int depth) {
+    char buffer[1024];          // локальний масив для збільшення кадру стеку
+    printf("Depth: %d\n", depth);
+    stack_overflow(depth + 1);  // рекурсивний виклик без умови виходу
+}
+
+void heap_overflow() {
+    int *arr = (int*)malloc(10 * sizeof(int));
+    if (!arr) {
+        perror("malloc");
+        return;
+    }
+    
+    for (int i = 0; i <= 20; i++) {
+        arr[i] = i;
+        printf("arr[%d] = %d\n", i, arr[i]);
+    }
+    free(arr);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s [stack|heap]\n", argv[0]);
+        return 1;
+    }
+
+    if (strcmp(argv[1], "stack") == 0) {
+        printf("=== Stack overflow test ===\n");
+        stack_overflow(0);
+    } else if (strcmp(argv[1], "heap") == 0) {
+        printf("=== Heap overflow test ===\n");
+        heap_overflow();
+    } else {
+        fprintf(stderr, "Invalid argument. Use 'stack' or 'heap'\n");
+        return 1;
+    }
+    return 0;
+}
