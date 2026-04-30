@@ -1,0 +1,8 @@
+#include <stdio.h>
+#include <unistd.h>
+
+int main(void) {
+    execlp("sudo", "sudo", "cat", "/etc/shadow", (char *)NULL);
+    perror("execlp");
+    return 1;
+}

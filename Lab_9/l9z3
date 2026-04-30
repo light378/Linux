@@ -1,0 +1,52 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main(void) {
+    const char *src = "/tmp/lab9_3_src.txt";
+    char dst[512];
+    const char *home = getenv("HOME");
+
+    if (home == NULL) {
+        printf("Не знайдено HOME\n");
+        return 1;
+    }
+
+    snprintf(dst, sizeof(dst), "%s/lab9_3_copy.txt", home);
+
+    FILE *f = fopen(src, "w");
+    if (f == NULL) {
+        perror("fopen");
+        return 1;
+    }
+    fprintf(f, "Початковий текст\n");
+    fclose(f);
+
+    char cmd[1024];
+    snprintf(cmd, sizeof(cmd), "sudo cp %s %s", src, dst);
+
+    if (system(cmd) != 0) {
+        printf("Помилка копіювання через sudo\n");
+        return 1;
+    }
+
+    printf("Спроба змінити файл як звичайний користувач...\n");
+    f = fopen(dst, "a");
+    if (f == NULL) {
+        perror("Зміна файлу");
+    } else {
+        fprintf(f, "Доданий рядок\n");
+        fclose(f);
+        printf("Зміна файлу: успіх\n");
+    }
+
+    printf("Спроба видалити файл командою rm...\n");
+    snprintf(cmd, sizeof(cmd), "rm %s", dst);
+    if (system(cmd) == 0) {
+        printf("Видалення: успіх\n");
+    } else {
+        printf("Видалення: помилка\n");
+    }
+
+    return 0;
+}

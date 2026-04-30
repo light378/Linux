@@ -1,0 +1,99 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/wait.h>
+
+void show_ls(const char *path) {
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "ls -l %s", path);
+    printf("\n=== %s ===\n", path);
+    system(cmd);
+}
+
+void try_read(const char *path) {
+    int fd = open(path, O_RDONLY);
+    if (fd >= 0) {
+        printf("Читання: дозволено\n");
+        close(fd);
+    } else {
+        printf("Читання: %s\n", strerror(errno));
+    }
+}
+
+void try_write(const char *path) {
+    int fd = open(path, O_WRONLY | O_APPEND);
+    if (fd >= 0) {
+        printf("Запис: дозволено\n");
+        close(fd);
+    } else {
+        printf("Запис: %s\n", strerror(errno));
+    }
+}
+
+void try_exec(const char *path) {
+    pid_t pid = fork();
+    if (pid < 0) {
+        printf("Виконання: помилка fork\n");
+        return;
+    }
+
+    if (pid == 0) {
+        int devnull = open("/dev/null", O_WRONLY);
+        if (devnull >= 0) {
+            dup2(devnull, 1);
+            dup2(devnull, 2);
+            close(devnull);
+        }
+        execl(path, path, (char *)NULL);
+        _exit(127);
+    }
+
+    int status = 0;
+    waitpid(pid, &status, 0);
+
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+        printf("Виконання: дозволено\n");
+    } else {
+        printf("Виконання: заборонено або помилка\n");
+    }
+}
+
+void check_file(const char *path) {
+    printf("\nФайл: %s\n", path);
+    try_read(path);
+    try_write(path);
+    try_exec(path);
+}
+
+int main(void) {
+    const char *home = getenv("HOME");
+    if (home == NULL) {
+        printf("Не знайдено HOME\n");
+        return 1;
+    }
+
+    char home_file[512];
+    snprintf(home_file, sizeof(home_file), "%s/lab9_6_demo.txt", home);
+
+    FILE *f = fopen(home_file, "w");
+    if (!f) {
+        perror("Створення файлу");
+        return 1;
+    }
+    fprintf(f, "demo\n");
+    fclose(f);
+
+    show_ls(home);
+    show_ls("/usr/bin");
+    show_ls("/etc");
+
+    check_file(home_file);
+    check_file("/usr/bin/ls");
+    check_file("/etc/passwd");
+    check_file("/etc/shadow");
+
+    return 0;
+}

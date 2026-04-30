@@ -1,0 +1,68 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+void test_rw(const char *path, const char *title) {
+    FILE *f;
+
+    printf("\n%s\n", title);
+
+    f = fopen(path, "r");
+    if (f) {
+        printf("Читання: дозволено\n");
+        fclose(f);
+    } else {
+        perror("Читання");
+    }
+
+    f = fopen(path, "a");
+    if (f) {
+        fprintf(f, "test\n");
+        fclose(f);
+        printf("Запис: дозволено\n");
+    } else {
+        perror("Запис");
+    }
+}
+
+int main(void) {
+    char path[256];
+    char cmd[512];
+    uid_t uid = getuid();
+    gid_t gid = getgid();
+
+    snprintf(path, sizeof(path), "/tmp/lab9_5_%d.txt", (int)getpid());
+
+    FILE *f = fopen(path, "w");
+    if (!f) {
+        perror("Створення файлу");
+        return 1;
+    }
+    fprintf(f, "start\n");
+    fclose(f);
+
+    printf("Файл: %s\n", path);
+
+    test_rw(path, "Початковий стан (файл створений вашим акаунтом):");
+
+    snprintf(cmd, sizeof(cmd), "sudo chown root:root %s", path);
+    if (system(cmd) != 0) return 1;
+    snprintf(cmd, sizeof(cmd), "sudo chmod 600 %s", path);
+    if (system(cmd) != 0) return 1;
+
+    test_rw(path, "Після chown root:root і chmod 600:");
+
+    snprintf(cmd, sizeof(cmd), "sudo chmod 666 %s", path);
+    if (system(cmd) != 0) return 1;
+
+    test_rw(path, "Після chmod 666 (власник root):");
+
+    snprintf(cmd, sizeof(cmd), "sudo chown %d:%d %s", (int)uid, (int)gid, path);
+    if (system(cmd) != 0) return 1;
+    snprintf(cmd, sizeof(cmd), "sudo chmod 600 %s", path);
+    if (system(cmd) != 0) return 1;
+
+    test_rw(path, "Після повернення власника вам і chmod 600:");
+
+    return 0;
+}

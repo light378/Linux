@@ -1,0 +1,70 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+int read_uid_min(void) {
+    FILE *f = fopen("/etc/login.defs", "r");
+    if (f == NULL) return 1000;
+
+    char line[256];
+    char key[64];
+    int value;
+
+    while (fgets(line, sizeof(line), f)) {
+        if (line[0] == '#') continue;
+        if (sscanf(line, "%63s %d", key, &value) == 2) {
+            if (strcmp(key, "UID_MIN") == 0) {
+                fclose(f);
+                return value;
+            }
+        }
+    }
+
+    fclose(f);
+    return 1000;
+}
+
+int main(void) {
+    uid_t my_uid = getuid();
+    int uid_min = read_uid_min();
+
+    FILE *fp = popen("getent passwd", "r");
+    if (fp == NULL) {
+        printf("Не вдалося виконати getent passwd\n");
+        return 1;
+    }
+
+    char line[2048];
+    int found = 0;
+
+    printf("UID_MIN = %d\n", uid_min);
+    printf("Звичайні користувачі, крім вас:\n");
+
+    while (fgets(line, sizeof(line), fp)) {
+        char tmp[2048];
+        strcpy(tmp, line);
+
+        char *name = strtok(tmp, ":");
+        strtok(NULL, ":");
+        char *uid_str = strtok(NULL, ":");
+
+        if (name == NULL || uid_str == NULL) continue;
+
+        long uid = strtol(uid_str, NULL, 10);
+
+        if (uid >= uid_min && uid != (long)my_uid) {
+            printf("%s (UID=%ld)\n", name, uid);
+            found = 1;
+        }
+    }
+
+    pclose(fp);
+
+    if (!found) {
+        printf("Не знайдено.\n");
+    }
+
+    return 0;
+}

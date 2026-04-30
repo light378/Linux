@@ -1,0 +1,16 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void) {
+    printf("Команда whoami:\n");
+    if (system("whoami") != 0) {
+        printf("Помилка виконання whoami\n");
+    }
+
+    printf("\nКоманда id:\n");
+    if (system("id") != 0) {
+        printf("Помилка виконання id\n");
+    }
+
+    return 0;
+}
