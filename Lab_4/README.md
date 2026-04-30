@@ -184,7 +184,7 @@ newptr = reallocarray(ptr, 500, sizeof(struct sbar));
 
 ---
 
-## Завдання 4.8 — Використання mmap() та mprotect() для сторожових сторінок.
+## Завдання 4.8 — Використання mmap() та mprotect() для сторожових сторінок. (5 варіант)
 
 Опис
 - Виділяємо 3 сторінки: `[guard][usable][guard]`. Середню сторінку робимо `PROT_READ|PROT_WRITE`, крайні — `PROT_NONE`.
