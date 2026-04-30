@@ -1,0 +1,106 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <zlib.h>
+
+#define DATA_SIZE  (1024 * 1024)
+#define CHUNK_SIZE 1024
+
+ssize_t full_write(int fd, const void *buffer, size_t count) {
+    const char *buf = buffer;
+    size_t total = 0;
+    while (total < count) {
+        ssize_t written = write(fd, buf + total, count - total);
+        if (written == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                usleep(1000);
+                continue;
+            }
+            perror("write");
+            return -1;
+        }
+        total += written;
+        printf("   Частковий запис: %zd байтів, всього %zu/%zu\n", written, total, count);
+    }
+    return total;
+}
+
+int main() {
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        exit(EXIT_FAILURE);
+    }
+
+    int flags = fcntl(pipefd[1], F_GETFL, 0);
+    if (flags == -1 || fcntl(pipefd[1], F_SETFL, flags | O_NONBLOCK) == -1) {
+        perror("fcntl");
+        exit(EXIT_FAILURE);
+    }
+
+    unsigned char *data = malloc(DATA_SIZE);
+    if (!data) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+    }
+    for (size_t i = 0; i < DATA_SIZE; i++)
+        data[i] = (unsigned char)(i % 256);
+
+    unsigned long crc_orig = crc32(0L, Z_NULL, 0);
+    crc_orig = crc32(crc_orig, data, DATA_SIZE);
+    printf("Оригінальна контрольна сума: %08lx\n", crc_orig);
+
+    printf("Починаємо запис %d байтів у канал...\n", DATA_SIZE);
+    ssize_t total_written = full_write(pipefd[1], data, DATA_SIZE);
+    if (total_written != DATA_SIZE) {
+        fprintf(stderr, "Помилка: записано %zd, очікувалось %d\n", total_written, DATA_SIZE);
+        free(data);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        exit(EXIT_FAILURE);
+    }
+    printf("Успішно записано всі %zd байтів.\n", total_written);
+
+    close(pipefd[1]);
+
+    unsigned char *read_data = malloc(DATA_SIZE);
+    if (!read_data) {
+        perror("malloc read_data");
+        free(data);
+        close(pipefd[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    size_t total_read = 0;
+    while (total_read < DATA_SIZE) {
+        ssize_t r = read(pipefd[0], read_data + total_read, DATA_SIZE - total_read);
+        if (r == -1) {
+            perror("read");
+            break;
+        }
+        if (r == 0) break;
+        total_read += r;
+    }
+
+    if (total_read != DATA_SIZE) {
+        fprintf(stderr, "Прочитано %zu байтів, а чекали %d\n", total_read, DATA_SIZE);
+    } else {
+        unsigned long crc_new = crc32(0L, Z_NULL, 0);
+        crc_new = crc32(crc_new, read_data, DATA_SIZE);
+        printf("Контрольна сума після читання: %08lx\n", crc_new);
+        if (crc_orig == crc_new)
+            printf("Цілісність даних збережено! Дані не пошкоджено.\n");
+        else
+            printf("ПОМИЛКА ЦІЛІСНОСТІ: суми не збігаються!\n");
+    }
+
+    free(data);
+    free(read_data);
+    close(pipefd[0]);
+    return 0;
+}

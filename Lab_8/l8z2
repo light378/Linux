@@ -1,0 +1,20 @@
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+int main(void) {
+    unsigned char data[] = {4, 5, 2, 2, 3, 3, 7, 9, 1, 5};
+    unsigned char buffer[4];
+    int fd = open("lab8_2.bin", O_CREAT | O_TRUNC | O_RDWR, 0644);
+    if (fd == -1) return 1;
+
+    if (write(fd, data, sizeof(data)) != sizeof(data)) return 1;
+    if (lseek(fd, 3, SEEK_SET) == -1) return 1;
+    if (read(fd, buffer, 4) != 4) return 1;
+
+    printf("%u %u %u %u\n", buffer[0], buffer[1], buffer[2], buffer[3]);
+
+    close(fd);
+    return 0;
+}

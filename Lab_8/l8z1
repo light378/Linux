@@ -1,0 +1,47 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+
+int main(void) {
+    int p[2];
+    if (pipe(p) == -1) {
+        perror("pipe");
+        return 1;
+    }
+
+    int flags = fcntl(p[1], F_GETFL);
+    if (flags == -1) {
+        perror("fcntl F_GETFL");
+        return 1;
+    }
+
+    if (fcntl(p[1], F_SETFL, flags | O_NONBLOCK) == -1) {
+        perror("fcntl F_SETFL");
+        return 1;
+    }
+
+    size_t nbytes = 200000;
+    char *buffer = malloc(nbytes);
+    if (!buffer) {
+        perror("malloc");
+        return 1;
+    }
+    memset(buffer, 'A', nbytes);
+
+    ssize_t count = write(p[1], buffer, nbytes);
+
+    if (count == -1) {
+        perror("write");
+    } else {
+        printf("nbytes = %zu\n", nbytes);
+        printf("count  = %zd\n", count);
+    }
+
+    free(buffer);
+    close(p[0]);
+    close(p[1]);
+    return 0;
+}

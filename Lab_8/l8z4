@@ -1,0 +1,9 @@
+#include <stdio.h>
+#include <unistd.h>
+
+int main(void) {
+    pid_t pid;
+    pid = fork();
+    printf("%d\n", (int)pid);
+    return 0;
+}
