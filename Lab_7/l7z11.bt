@@ -1,0 +1,32 @@
+#!/usr/bin/env bpftrace
+/*
+  l7z11.bt - trace user-space stack on sys_enter events for a target command or pid
+
+  Usage examples:
+    sudo bpftrace l7z11.bt -c './myprogram arg1 arg2'
+    sudo bpftrace l7z11.bt         # edit target_comm or target_pid in the script, or set them before running
+
+  Notes:
+   - Requires root.
+   - For readable symbol names in user stack, compile target with debug info (gcc -g).
+   - If you prefer filtering by PID, set target_pid > 0.
+*/
+
+BEGIN
+{
+  // Set one of these to control tracing:
+  // target_comm: name of executable (basename) to filter by, e.g. "l7z11"
+  // target_pid:  if >0, trace only this pid (overrides target_comm)
+  target_comm = "l7z11";
+  target_pid = 0;
+}
+
+tracepoint:syscalls:sys_enter_*
+/ (target_pid == 0 && comm == target_comm) || (target_pid != 0 && pid == target_pid) /
+{
+  printf("\n--- %s pid=%d syscall=%s ---\n", comm, pid, probe);
+  printf("User stack (symbols):\n");
+  // print user-space stack symbols (requires debuginfo/symbols)
+  ustacksym();
+  printf("\n");
+}

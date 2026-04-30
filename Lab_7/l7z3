@@ -1,0 +1,28 @@
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "Використання: %s <слово> <файл>\n", argv[0]);
+        return 1;
+    }
+
+    const char *word = argv[1];
+    const char *filename = argv[2];
+
+    FILE *f = fopen(filename, "r");
+    if (f == NULL) {
+        perror("Помилка відкриття файлу");
+        return 1;
+    }
+
+    char line[4096];
+    while (fgets(line, sizeof(line), f) != NULL) {
+        if (strstr(line, word) != NULL) {
+            fputs(line, stdout);
+        }
+    }
+
+    fclose(f);
+    return 0;
+}

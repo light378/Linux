@@ -1,0 +1,41 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Використання: %s <файл1> [файл2 ...]\n", argv[0]);
+        return 1;
+    }
+
+    char line[1024];
+    int printed = 0;
+
+    for (int i = 1; i < argc; i++) {
+        FILE *f = fopen(argv[i], "r");
+        if (!f) {
+            perror(argv[i]);
+            continue;
+        }
+
+        while (fgets(line, sizeof(line), f) != NULL) {
+            fputs(line, stdout);
+            printed++;
+
+            if (printed == 20) {
+                printf("\n-- Натисніть Enter для продовження --");
+                fflush(stdout);
+
+                int ch;
+                do {
+                    ch = getchar();
+                } while (ch != '\n' && ch != EOF);
+
+                printed = 0;
+            }
+        }
+
+        fclose(f);
+    }
+
+    return 0;
+}

@@ -1,0 +1,24 @@
+#include <stdio.h>
+#include <time.h>
+
+int main(void) {
+    struct timespec start, end;
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    long long sum = 0;
+    for (long i = 0; i < 100000000; i++) {
+        sum += i;
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    long sec = end.tv_sec - start.tv_sec;
+    long nsec = end.tv_nsec - start.tv_nsec;
+    double ms = sec * 1000.0 + nsec / 1000000.0;
+
+    printf("Результат: %lld\n", sum);
+    printf("Час виконання: %.3f мс\n", ms);
+
+    return 0;
+}

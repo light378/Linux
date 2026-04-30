@@ -1,0 +1,87 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <pwd.h>
+#include <grp.h>
+#include <time.h>
+#include <string.h>
+#include <limits.h>
+
+char file_type(mode_t m) {
+    if (S_ISREG(m)) return '-';
+    if (S_ISDIR(m)) return 'd';
+    if (S_ISLNK(m)) return 'l';
+    if (S_ISCHR(m)) return 'c';
+    if (S_ISBLK(m)) return 'b';
+    if (S_ISFIFO(m)) return 'p';
+    if (S_ISSOCK(m)) return 's';
+    return '?';
+}
+
+void perms(mode_t m, char out[11]) {
+    out[0] = file_type(m);
+    out[1] = (m & S_IRUSR) ? 'r' : '-';
+    out[2] = (m & S_IWUSR) ? 'w' : '-';
+    out[3] = (m & S_IXUSR) ? 'x' : '-';
+    out[4] = (m & S_IRGRP) ? 'r' : '-';
+    out[5] = (m & S_IWGRP) ? 'w' : '-';
+    out[6] = (m & S_IXGRP) ? 'x' : '-';
+    out[7] = (m & S_IROTH) ? 'r' : '-';
+    out[8] = (m & S_IWOTH) ? 'w' : '-';
+    out[9] = (m & S_IXOTH) ? 'x' : '-';
+    out[10] = '\0';
+}
+
+int main(void) {
+    DIR *dir = opendir(".");
+    if (!dir) {
+        perror("opendir");
+        return 1;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_name[0] == '.') continue;
+
+        char path[PATH_MAX];
+        snprintf(path, sizeof(path), "./%s", entry->d_name);
+
+        struct stat st;
+        if (lstat(path, &st) == -1) {
+            perror("lstat");
+            continue;
+        }
+
+        char p[11];
+        perms(st.st_mode, p);
+
+        struct passwd *pw = getpwuid(st.st_uid);
+        struct group *gr = getgrgid(st.st_gid);
+
+        char uname[32], gname[32];
+        if (pw) snprintf(uname, sizeof(uname), "%s", pw->pw_name);
+        else snprintf(uname, sizeof(uname), "%u", st.st_uid);
+
+        if (gr) snprintf(gname, sizeof(gname), "%s", gr->gr_name);
+        else snprintf(gname, sizeof(gname), "%u", st.st_gid);
+
+        char tbuf[32];
+        struct tm *tm_info = localtime(&st.st_mtime);
+        strftime(tbuf, sizeof(tbuf), "%b %d %H:%M", tm_info);
+
+        printf("%s %2lu %-8s %-8s %8lld %s %s\n",
+               p,
+               (unsigned long)st.st_nlink,
+               uname,
+               gname,
+               (long long)st.st_size,
+               tbuf,
+               entry->d_name);
+    }
+
+    closedir(dir);
+    return 0;
+}

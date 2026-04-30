@@ -1,0 +1,26 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void) {
+    FILE *rwho_out = popen("rwho", "r");
+    if (!rwho_out) {
+        perror("popen rwho");
+        return 1;
+    }
+
+    FILE *more_in = popen("more", "w");
+    if (!more_in) {
+        perror("popen more");
+        pclose(rwho_out);
+        return 1;
+    }
+
+    char buf[4096];
+    while (fgets(buf, sizeof(buf), rwho_out)) {
+        fputs(buf, more_in);
+    }
+
+    pclose(rwho_out);
+    pclose(more_in);
+    return 0;
+}

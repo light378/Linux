@@ -1,0 +1,35 @@
+#include <stdio.h>
+#include <dirent.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <limits.h>
+
+void list_files(const char *path) {
+    DIR *dir = opendir(path);
+    if (!dir) return;
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+
+        char full[PATH_MAX];
+        snprintf(full, sizeof(full), "%s/%s", path, entry->d_name);
+
+        struct stat st;
+        if (stat(full, &st) != 0) continue;
+
+        if (S_ISREG(st.st_mode)) {
+            printf("%s\n", full);
+        } else if (S_ISDIR(st.st_mode)) {
+            list_files(full);
+        }
+    }
+
+    closedir(dir);
+}
+
+int main(void) {
+    list_files(".");
+    return 0;
+}

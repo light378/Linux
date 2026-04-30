@@ -1,0 +1,70 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+int is_c_file(const char *name) {
+    size_t len = strlen(name);
+    return len > 2 && strcmp(name + len - 2, ".c") == 0;
+}
+
+int main(void) {
+    DIR *dir;
+    struct dirent *entry;
+    int found = 0;
+
+    dir = opendir(".");
+    if (!dir) {
+        perror("opendir");
+        return 1;
+    }
+
+    printf("Список C-файлів у поточному каталозі:\n");
+    while ((entry = readdir(dir)) != NULL) {
+        struct stat st;
+        if (!is_c_file(entry->d_name)) continue;
+        if (stat(entry->d_name, &st) != 0) continue;
+        if (!S_ISREG(st.st_mode)) continue;
+
+        printf("- %s\n", entry->d_name);
+        found = 1;
+    }
+    closedir(dir);
+
+    if (!found) {
+        printf("C-файли не знайдено.\n");
+        return 0;
+    }
+
+    dir = opendir(".");
+    if (!dir) {
+        perror("opendir");
+        return 1;
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        struct stat st;
+        char ans[16];
+
+        if (!is_c_file(entry->d_name)) continue;
+        if (stat(entry->d_name, &st) != 0) continue;
+        if (!S_ISREG(st.st_mode)) continue;
+
+        printf("Надати іншим користувачам право читання для %s? (y/n): ", entry->d_name);
+        if (!fgets(ans, sizeof(ans), stdin)) break;
+
+        if (ans[0] == 'y' || ans[0] == 'Y') {
+            mode_t new_mode = st.st_mode | S_IROTH;
+            if (chmod(entry->d_name, new_mode) == 0) {
+                printf("Надано право читання для інших: %s\n", entry->d_name);
+            } else {
+                perror("chmod");
+            }
+        }
+    }
+
+    closedir(dir);
+    return 0;
+}

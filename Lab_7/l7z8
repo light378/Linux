@@ -1,0 +1,54 @@
+#include <stdio.h>
+#include <dirent.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+int main(void) {
+    DIR *dir = opendir(".");
+    if (!dir) {
+        perror("opendir");
+        return 1;
+    }
+
+    printf("Керування: y - видалити, n - пропустити, a - видалити всі наступні, q - вийти\n");
+
+    struct dirent *entry;
+    int delete_all = 0;
+    char ans[16];
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+
+        struct stat st;
+        if (lstat(entry->d_name, &st) != 0)
+            continue;
+
+        if (!S_ISREG(st.st_mode))
+            continue;
+
+        if (!delete_all) {
+            printf("Файл: %s -> дія [y/n/a/q]: ", entry->d_name);
+            if (!fgets(ans, sizeof(ans), stdin))
+                break;
+
+            if (ans[0] == 'q' || ans[0] == 'Q')
+                break;
+            if (ans[0] == 'n' || ans[0] == 'N')
+                continue;
+            if (ans[0] == 'a' || ans[0] == 'A')
+                delete_all = 1;
+            else if (!(ans[0] == 'y' || ans[0] == 'Y'))
+                continue;
+        }
+
+        if (unlink(entry->d_name) == 0)
+            printf("Видалено: %s\n", entry->d_name);
+        else
+            perror(entry->d_name);
+    }
+
+    closedir(dir);
+    return 0;
+}

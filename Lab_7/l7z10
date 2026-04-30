@@ -1,0 +1,33 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Використання: %s <n>\n", argv[0]);
+        return 1;
+    }
+
+    double n = atof(argv[1]);
+    if (n < 0.0) {
+        printf("n має бути >= 0\n");
+        return 1;
+    }
+
+    srand((unsigned int)(time(NULL) ^ getpid()));
+
+    printf("Випадкові числа у діапазоні [0.0, 1.0]:\n");
+    for (int i = 0; i < 10; i++) {
+        double r = (double)rand() / (double)RAND_MAX;
+        printf("%.6f\n", r);
+    }
+
+    printf("\nВипадкові числа у діапазоні [0.0, %.6f]:\n", n);
+    for (int i = 0; i < 10; i++) {
+        double r = ((double)rand() / (double)RAND_MAX) * n;
+        printf("%.6f\n", r);
+    }
+
+    return 0;
+}

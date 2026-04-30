@@ -1,0 +1,28 @@
+#define _DEFAULT_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <string.h>
+#include <sys/stat.h>
+
+int main(void) {
+    struct dirent **list;
+    int n = scandir(".", &list, NULL, alphasort);
+    if (n < 0) {
+        perror("scandir");
+        return 1;
+    }
+
+    for (int i = 0; i < n; i++) {
+        if (strcmp(list[i]->d_name, ".") != 0 && strcmp(list[i]->d_name, "..") != 0) {
+            struct stat st;
+            if (stat(list[i]->d_name, &st) == 0 && S_ISDIR(st.st_mode)) {
+                printf("%s\n", list[i]->d_name);
+            }
+        }
+        free(list[i]);
+    }
+
+    free(list);
+    return 0;
+}
